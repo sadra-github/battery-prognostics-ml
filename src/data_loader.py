@@ -1,4 +1,5 @@
 """Basic loading and validation for cycle-level battery tables."""
+import csv
 from pathlib import Path
 from typing import Iterable
 
@@ -14,6 +15,15 @@ def load_cycle_csv(path: str | Path) -> pd.DataFrame:
     file_path = Path(path).expanduser()
     if not file_path.is_file():
         raise FileNotFoundError(f"CSV file not found: {file_path}")
+
+    # pandas may rename duplicate headers (for example, Cycle -> Cycle.1),
+    # making a duplicate-column check after parsing ineffective.
+    with file_path.open("r", encoding="utf-8-sig", newline="") as stream:
+        header = next(csv.reader(stream), [])
+    if len(header) != len(set(header)):
+        duplicates = sorted({name for name in header if header.count(name) > 1})
+        raise ValueError(f"Duplicate column names: {duplicates}")
+
     frame = pd.read_csv(file_path)
     if frame.empty:
         raise ValueError(f"CSV contains no rows: {file_path}")

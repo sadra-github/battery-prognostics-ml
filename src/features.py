@@ -4,15 +4,17 @@ import pandas as pd
 
 
 def extract_degradation_trend(values, window: int = 5) -> pd.Series:
-    """Return a centered rolling mean for an ordered degradation signal.
+    """Return a trailing rolling mean for an ordered degradation signal.
 
-    The input must already be sorted by cycle. The rolling window is kept
-    modest by default; choose it using the sampling density and protocol.
+    Values must already be sorted in chronological/cycle order. The value at
+    each position uses only that observation and preceding observations, so
+    future cycles do not contribute to earlier features. Select ``window``
+    according to the sampling density and prediction protocol.
     """
-    if window < 1:
+    if not isinstance(window, (int, np.integer)) or isinstance(window, (bool, np.bool_)) or window < 1:
         raise ValueError("window must be a positive integer")
     series = pd.Series(values, dtype="float64")
-    return series.rolling(window=window, min_periods=1, center=True).mean()
+    return series.rolling(window=int(window), min_periods=1, center=False).mean()
 
 
 def extract_impedance_features(frame: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
